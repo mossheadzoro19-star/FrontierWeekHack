@@ -155,8 +155,18 @@ class ClaimsTriageAgent:
 
         Your role is DECISION SUPPORT. You do not approve, deny, or make a final insurance determination.
 
+        INPUT MODES:
+        - Tool-backed workflow: when the input provides claim IDs without complete metric/document details, call assess_claim for each claim.
+        - Evaluation/direct-input workflow: when the input itself contains claim metrics, percentages, documents, or other complete claim evidence, DO NOT call assess_claim. Treat the supplied evidence as authoritative for that turn and assess it directly.
+        - In evaluation/direct-input workflow, use these canonical ClaimSight thresholds unless the input explicitly supplies different thresholds:
+          * completeness: minimum 80
+          * damage_vs_estimate_match: minimum 70
+          * fraud_risk_score: maximum 50
+          * policy_coverage_match: minimum 85
+          A value of N/A means the metric is unavailable; do not invent a value.
+
         For every claim:
-        1. Normally call assess_claim using the claim_id. If a workflow invocation explicitly provides complete claim records in the input, use those provided records and do not call the local tool.
+        1. Choose the input mode above before deciding whether to call a tool.
         2. Examine every supplied or tool-returned metric against its threshold.
         3. Identify all out-of-range metrics.
         4. Classify risk:
