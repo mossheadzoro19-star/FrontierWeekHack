@@ -105,11 +105,15 @@ def ensure_agents_deployed() -> tuple:
             definition=PromptAgentDefinition(
                 model=MODEL_DEPLOYMENT_NAME,
                 instructions=(
-                    "You are an insurance claims triage specialist for ClaimSight Insurance. "
-                    "When asked to assess claims, use the assess_claim tool for each claim ID. "
-                    "Report every metric that is flagged: claim ID, metric name, current value, "
-                    "threshold violated, and deviation. "
-                    "Use WARNING or CRITICAL labels. Be concise and structured."
+                    "You are the Claims Triage Agent for ClaimSight Insurance. "
+                    "You provide decision support, not final insurance decisions. "
+                    "Use assess_claim for every requested claim ID and base risk only on returned metrics and thresholds. "
+                    "Never trust the source status field as ground truth. "
+                    "Classify each claim as NORMAL, WARNING, or CRITICAL. "
+                    "Require human review for fraud risk above threshold, multiple significant violations, or insufficient evidence. "
+                    "Return exactly one JSON array containing one object per claim with: claim_id, risk_level, confidence, "
+                    "flagged_metrics, missing_documents, evidence_summary, and human_review_required. "
+                    "Do not invent facts, policy terms, or documents."
                 ),
                 tools=[assess_claim_tool],
             ),
@@ -124,11 +128,15 @@ def ensure_agents_deployed() -> tuple:
             definition=PromptAgentDefinition(
                 model=MODEL_DEPLOYMENT_NAME,
                 instructions=(
-                    "You are a senior claims adjuster for ClaimSight Insurance. "
-                    "Given flags from a claim assessment, recommend an action: "
-                    "APPROVE, REQUEST DOCUMENTS, INVESTIGATE, or DENY. "
-                    "Provide reasoning and estimate urgency: IMMEDIATE, WITHIN 48H, or STANDARD. "
-                    "Format: RECOMMENDED ACTION: ... / REASONING: ... / NEXT STEPS: ... / URGENCY: ..."
+                    "You are the Claims Decision Agent for ClaimSight Insurance. "
+                    "You provide decision support to a human claims adjuster; never present a recommendation as a final determination. "
+                    "Consume only the structured triage result supplied by the Triage Agent. "
+                    "Recommend exactly one action: APPROVE, REQUEST DOCUMENTS, INVESTIGATE, or DENY. "
+                    "If human_review_required is true, preserve it regardless of the recommendation. "
+                    "Use REQUEST DOCUMENTS for missing evidence, INVESTIGATE for material fraud or multiple significant violations, "
+                    "and APPROVE only when evidence indicates the claim is within thresholds and documentation is sufficient. "
+                    "Never invent claim facts, policy terms, or evidence. "
+                    "Return valid JSON with claim_id, recommended_action, confidence, reasoning, next_steps, urgency, and human_review_required."
                 ),
             ),
         )
@@ -190,8 +198,8 @@ def run_claims_triage(triage_agent_name: str) -> str:
     return report
 
 
-def run_claims_decision(decision_agent_name: str, claim_id: str, flags: list) -> str:
-    """Call the claims decision agent for a single flagged claim."""
+def run_claims_decision(decision_agent_name: str, claim_id: str, triage_result: dict) -> str:
+    """Pass the actual structured Triage Agent result to the Decision Agent."""
     from azure.ai.projects import AIProjectClient
     from azure.identity import DefaultAzureCredential
 
@@ -202,14 +210,11 @@ def run_claims_decision(decision_agent_name: str, claim_id: str, flags: list) ->
     openai_client = client.get_openai_client()
     agent_ref = {"agent_reference": {"name": decision_agent_name, "type": "agent_reference"}}
 
-    flag_text = "\n".join(
-        f"  - {f['metric']}: {f['value']} {f['unit']} ({f['deviation']})"
-        for f in flags
-    )
     input_text = (
-        f"Claim {claim_id} has the following flags:\n"
-        f"{flag_text}\n"
-        "Recommend an action and provide next steps."
+        "You are receiving the Triage Agent's structured output. "
+        "Use ONLY this evidence for your recommendation. "
+        "Preserve human_review_required and return valid JSON.\n\n"
+        + json.dumps(triage_result, indent=2)
     )
 
     conversation = openai_client.conversations.create()
@@ -224,29 +229,55 @@ def run_claims_decision(decision_agent_name: str, claim_id: str, flags: list) ->
     return decision
 
 
+def _parse_triage_results(triage_report: str) -> list[dict]:
+    """Parse the Triage Agent's strict JSON-array contract defensively."""
+    try:
+        parsed = json.loads(triage_report)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"Triage Agent returned invalid JSON: {exc}") from exc
+
+    if not isinstance(parsed, list):
+        raise ValueError("Triage Agent output must be a JSON array.")
+
+    required = {"claim_id", "risk_level", "confidence", "flagged_metrics",
+                "missing_documents", "evidence_summary", "human_review_required"}
+    for item in parsed:
+        if not isinstance(item, dict) or not required.issubset(item):
+            raise ValueError(f"Invalid triage record: {item}")
+    return parsed
+
+
 def run_claims_workflow(triage_agent: str, decision_agent: str) -> dict:
-    """Orchestrate: triage all claims -> per-claim decision -> consolidated report."""
+    """Orchestrate: triage once -> route flagged claims -> decision -> report."""
     triage_report = run_claims_triage(triage_agent)
     print(triage_report)
 
+    triage_results = _parse_triage_results(triage_report)
+
     print("\n=== Step 2b: Claims Decisions ===")
     decisions = {}
-    flagged_claims = []
+    routed_claims = []
 
-    for claim_id in CLAIMS:
-        result = json.loads(assess_claim(claim_id))
-        if result.get("flags"):
-            flagged_claims.append(claim_id)
-            print(f"  Deciding on {claim_id}...")
-            decision = run_claims_decision(decision_agent, claim_id, result["flags"])
+    for triage in triage_results:
+        claim_id = triage["claim_id"]
+        needs_route = (
+            triage["risk_level"] != "NORMAL"
+            or triage["human_review_required"]
+            or bool(triage["missing_documents"])
+        )
+        if needs_route:
+            routed_claims.append(claim_id)
+            print(f"  Routing {claim_id} to Decision Agent...")
+            decision = run_claims_decision(decision_agent, claim_id, triage)
             decisions[claim_id] = decision
 
     return {
         "triage_report": triage_report,
-        "flagged_claims": flagged_claims,
+        "triage_results": triage_results,
+        "flagged_claims": routed_claims,
         "decisions": decisions,
-        "total_claims": len(CLAIMS),
-        "problematic_claims": len(flagged_claims),
+        "total_claims": len(triage_results),
+        "problematic_claims": len(routed_claims),
     }
 
 
