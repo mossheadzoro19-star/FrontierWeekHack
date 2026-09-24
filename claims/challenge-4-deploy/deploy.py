@@ -99,7 +99,7 @@ def ensure_agents_deployed() -> tuple:
     )
     existing_names = {a.name for a in client.agents.list()}
 
-    if TRIAGE_AGENT_NAME not in existing_names:
+    if True:
         client.agents.create_version(
             agent_name=TRIAGE_AGENT_NAME,
             definition=PromptAgentDefinition(
@@ -119,10 +119,7 @@ def ensure_agents_deployed() -> tuple:
             ),
         )
         print(f"  Deployed: {TRIAGE_AGENT_NAME}")
-    else:
-        print(f"  Found existing: {TRIAGE_AGENT_NAME}")
-
-    if DECISION_AGENT_NAME not in existing_names:
+    if True:
         client.agents.create_version(
             agent_name=DECISION_AGENT_NAME,
             definition=PromptAgentDefinition(
@@ -141,9 +138,6 @@ def ensure_agents_deployed() -> tuple:
             ),
         )
         print(f"  Deployed: {DECISION_AGENT_NAME}")
-    else:
-        print(f"  Found existing: {DECISION_AGENT_NAME}")
-
     client.close()
     return TRIAGE_AGENT_NAME, DECISION_AGENT_NAME
 
