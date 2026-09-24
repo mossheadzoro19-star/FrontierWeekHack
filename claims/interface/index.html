@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ClaimSight — AI Claims Decision Support</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand"><span class="brand-mark">C</span><div><strong>ClaimSight</strong><small>Insurance AI</small></div></div>
+    <nav>
+      <button class="nav-item active">◈ <span>Claims Queue</span></button>
+      <button class="nav-item">◉ <span>Analytics</span></button>
+      <button class="nav-item">⚙ <span>Agent Operations</span></button>
+    </nav>
+    <div class="agent-status"><span class="dot"></span><div><strong>Agent system</strong><small>Decision support online</small></div></div>
+  </aside>
+
+  <main>
+    <header class="topbar">
+      <div><span class="eyebrow">CLAIMS OPERATIONS</span><h1>Claims Decision Center</h1></div>
+      <div class="header-actions"><span class="pill">● Human-in-the-loop</span><button class="run-btn" id="runBtn">Run triage</button></div>
+    </header>
+
+    <section class="metrics">
+      <div class="metric-card"><span>Total claims</span><strong id="total">5</strong><small>Today's queue</small></div>
+      <div class="metric-card"><span>Normal</span><strong id="normal">2</strong><small>Within thresholds</small></div>
+      <div class="metric-card warning"><span>Warning</span><strong id="warning">1</strong><small>Needs attention</small></div>
+      <div class="metric-card critical"><span>Critical</span><strong id="critical">2</strong><small>Human review</small></div>
+    </section>
+
+    <section class="workspace">
+      <div class="panel queue-panel">
+        <div class="panel-head"><div><span class="eyebrow">INCOMING QUEUE</span><h2>Claims requiring triage</h2></div><span class="count" id="queueCount">3 flagged</span></div>
+        <div id="claimList" class="claim-list"></div>
+      </div>
+
+      <div class="panel detail-panel">
+        <div id="detail"></div>
+      </div>
+    </section>
+
+    <section class="architecture">
+      <div class="panel">
+        <div class="panel-head"><div><span class="eyebrow">AGENT PIPELINE</span><h2>Explainable processing flow</h2></div></div>
+        <div class="flow">
+          <div class="flow-node"><b>01</b><strong>Claims Queue</strong><small>Incoming claim data</small></div>
+          <span class="arrow">→</span>
+          <div class="flow-node active-node"><b>02</b><strong>Triage Agent</strong><small>Tools + thresholds + evidence</small></div>
+          <span class="arrow">→</span>
+          <div class="flow-node"><b>03</b><strong>Human Review Gate</strong><small>High-risk claims</small></div>
+          <span class="arrow">→</span>
+          <div class="flow-node"><b>04</b><strong>Decision Agent</strong><small>Action recommendation</small></div>
+        </div>
+      </div>
+    </section>
+    <footer>ClaimSight is a decision-support prototype. Final claims decisions remain with an authorized human adjuster.</footer>
+  </main>
+  <script src="./app.js"></script>
+</body>
+</html>
