@@ -97,8 +97,7 @@ def ensure_agents_deployed() -> tuple:
         endpoint=PROJECT_CONNECTION_STRING,
         credential=DefaultAzureCredential(),
     )
-    if True:
-        client.agents.create_version(
+    client.agents.create_version(
             agent_name=TRIAGE_AGENT_NAME,
             definition=PromptAgentDefinition(
                 model=MODEL_DEPLOYMENT_NAME,
@@ -116,9 +115,8 @@ def ensure_agents_deployed() -> tuple:
                 tools=[assess_claim_tool],
             ),
         )
-        print(f"  Deployed: {TRIAGE_AGENT_NAME}")
-    if True:
-        client.agents.create_version(
+    print(f"  Deployed: {TRIAGE_AGENT_NAME}")
+    client.agents.create_version(
             agent_name=DECISION_AGENT_NAME,
             definition=PromptAgentDefinition(
                 model=MODEL_DEPLOYMENT_NAME,
@@ -135,7 +133,7 @@ def ensure_agents_deployed() -> tuple:
                 ),
             ),
         )
-        print(f"  Deployed: {DECISION_AGENT_NAME}")
+    print(f"  Deployed: {DECISION_AGENT_NAME}")
     client.close()
     return TRIAGE_AGENT_NAME, DECISION_AGENT_NAME
 
@@ -413,9 +411,10 @@ def run_portal_workflow(workflow_name: str) -> str:
         "All claims data for today is provided below — do NOT call assess_claim. "
         "Analyse the data directly from this message.\n\n"
         + claims_text
-        + "\n\nFor each claim, assess completeness, check for fraud indicators, and "
-        "classify risk (normal/warning/critical). Then make a clear approval or denial "
-        "decision for each claim with justification."
+        + "\n\nFirst, the Triage Agent must classify each claim and produce its structured evidence. "
+        "Then the Decision Agent must consume that triage output and produce a recommendation "
+        "for the human adjuster. Preserve human_review_required and do not make an autonomous "
+        "final approval or denial decision."
     )
 
     conversation = openai_client.conversations.create()
