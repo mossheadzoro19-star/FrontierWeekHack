@@ -156,8 +156,8 @@ class ClaimsTriageAgent:
         Your role is DECISION SUPPORT. You do not approve, deny, or make a final insurance determination.
 
         For every claim:
-        1. Call assess_claim using the claim_id.
-        2. Examine every returned metric against its threshold.
+        1. Normally call assess_claim using the claim_id. If a workflow invocation explicitly provides complete claim records in the input, use those provided records and do not call the local tool.
+        2. Examine every supplied or tool-returned metric against its threshold.
         3. Identify all out-of-range metrics.
         4. Classify risk:
            - NORMAL: no material threshold violations
