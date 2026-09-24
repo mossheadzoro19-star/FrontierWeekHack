@@ -98,7 +98,7 @@ def ensure_agents_deployed() -> tuple:
         credential=DefaultAzureCredential(),
     )
     client.agents.create_version(
-            agent_name=TRIAGE_AGENT_NAME,
+        agent_name=TRIAGE_AGENT_NAME,
             definition=PromptAgentDefinition(
                 model=MODEL_DEPLOYMENT_NAME,
                 instructions=(
@@ -117,7 +117,7 @@ def ensure_agents_deployed() -> tuple:
         )
     print(f"  Deployed: {TRIAGE_AGENT_NAME}")
     client.agents.create_version(
-            agent_name=DECISION_AGENT_NAME,
+        agent_name=DECISION_AGENT_NAME,
             definition=PromptAgentDefinition(
                 model=MODEL_DEPLOYMENT_NAME,
                 instructions=(
@@ -398,7 +398,7 @@ def run_portal_workflow(workflow_name: str) -> str:
 
     print(f"\n  Workflow steps:")
     print(f"    1. claims-triage-agent    — triage claims for completeness and fraud indicators")
-    print(f"    2. claims-decision-agent  — make approval/denial decisions for triaged claims")
+    print(f"    2. claims-decision-agent  — make an evidence-based recommendation for triaged claims")
 
     # Embed claims data in the input so agents don't need tool calls.
     # The claims-triage-agent is instructed to call assess_claim per claim,
