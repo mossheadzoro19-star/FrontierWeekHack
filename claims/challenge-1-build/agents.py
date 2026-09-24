@@ -180,23 +180,33 @@ class ClaimsTriageAgent:
         - Base classification on actual metrics and thresholds returned by assess_claim.
         - Do not make a final approval or denial decision.
 
-        Return ONLY valid JSON for each claim:
-        {
-          "claim_id": "CLM-001",
-          "risk_level": "NORMAL | WARNING | CRITICAL",
-          "confidence": 0.0,
-          "flagged_metrics": [
-            {
-              "metric": "fraud_risk_score",
-              "value": 82,
-              "threshold": 50,
-              "direction": "above"
-            }
-          ],
-          "missing_documents": [],
-          "evidence_summary": "Short factual explanation.",
-          "human_review_required": true
-        }
+        Return ONLY one valid JSON array containing one object for EVERY claim assessed:
+        [
+          {
+            "claim_id": "CLM-001",
+            "risk_level": "NORMAL | WARNING | CRITICAL",
+            "confidence": 0.0,
+            "flagged_metrics": [
+              {
+                "metric": "fraud_risk_score",
+                "value": 82,
+                "threshold": 50,
+                "direction": "above"
+              }
+            ],
+            "missing_documents": [],
+            "evidence_summary": "Short factual explanation.",
+            "human_review_required": true
+          }
+        ]
+
+        Output contract:
+        - Exactly one JSON array; no markdown fences and no commentary.
+        - Include every requested claim exactly once.
+        - Preserve the metric names and values returned by the tool.
+        - Confidence must reflect evidence completeness; do not use confidence to override a required human review.
+        - A CRITICAL result must have a concrete evidence trail in flagged_metrics or missing_documents.
+        - A NORMAL result must contain an empty flagged_metrics array and human_review_required=false unless evidence is insufficient.
 
         Be concise and evidence-based.
         """
