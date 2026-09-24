@@ -55,47 +55,47 @@ def setup_tracing():
 
 
 def run_traced_agent_call():
-    """Make an agent call that will be captured as a trace."""
-    print("\n=== Running traced agent call ===")
+    """Run the real Claims Triage -> Decision flow so both agents are traced."""
+    print("\n=== Running traced Claims workflow ===")
 
-    from azure.ai.projects import AIProjectClient
-    from azure.ai.projects.models import PromptAgentDefinition
-    from azure.identity import DefaultAzureCredential
+    # Import Challenge 1 only AFTER tracing has been configured.
+    challenge1_dir = Path(__file__).resolve().parents[1] / "challenge-1-build"
+    sys.path.insert(0, str(challenge1_dir))
 
-    client = AIProjectClient(
-        endpoint=PROJECT_CONNECTION_STRING,
-        credential=DefaultAzureCredential(),
+    from agents import ClaimsDecisionAgent, ClaimsTriageAgent, _load_claim_batch
+
+    claim_batch = _load_claim_batch()
+    claim_ids = [claim["claim_id"] for claim in claim_batch]
+
+    print("Creating Claims Triage Agent...")
+    triage_agent = ClaimsTriageAgent()
+    triage_agent.create()
+    print(f"✅ Created: {triage_agent.agent.name} (version {triage_agent.agent.version})")
+
+    triage_result = triage_agent.run(
+        "Assess this claim batch using assess_claim for every claim ID. "
+        "Base risk classification only on the tool results, not the existing status field. "
+        "Return the structured JSON triage results requested by your system instructions.\n\n"
+        f"CLAIM_IDS: {claim_ids}"
     )
-    openai_client = client.get_openai_client()
+    print(f"✅ Triage trace captured. Output preview: {triage_result[:200]}...")
 
-    agent = client.agents.create_version(
-        agent_name="tracing-test-agent",
-        definition=PromptAgentDefinition(
-            model=MODEL_DEPLOYMENT_NAME,
-            instructions=(
-                "You are a claims operations assistant for ClaimSight Insurance. "
-                "Summarize triage risk and recommended decisions for claim batches."
-            ),
-        ),
+    print("Creating Claims Decision Agent...")
+    decision_agent = ClaimsDecisionAgent()
+    decision_agent.create()
+    print(f"✅ Created: {decision_agent.agent.name} (version {decision_agent.agent.version})")
+
+    decision_result = decision_agent.run(
+        "Use ONLY the structured triage results below to provide decision-support recommendations. "
+        "Preserve every human-review requirement. Do not invent claim facts.\n\n"
+        "TRIAGE RESULTS:\n"
+        + triage_result
     )
+    print(f"✅ Decision trace captured. Output preview: {decision_result[:200]}...")
 
-    conversation = openai_client.conversations.create()
-    response = openai_client.responses.create(
-        input=(
-            "Assess this claim batch and return decision urgency guidance.\n"
-            "domain: ClaimSight Insurance\n"
-            "claims: CLM-001 INVESTIGATE IMMEDIATE, CLM-003 REQUEST DOCUMENTS WITHIN 48H, CLM-005 INVESTIGATE STANDARD\n"
-            "tool_reference: assess_claim"
-        ),
-        conversation=conversation.id,
-        extra_body={"agent_reference": {"name": agent.name, "type": "agent_reference"}},
-    )
-    print(f"✅ Agent responded: {response.output_text[:100]}...")
-
-    # Cleanup
-    openai_client.conversations.delete(conversation_id=conversation.id)
-    client.agents.delete_version(agent_name=agent.name, agent_version=agent.version)
-    client.close()
+    # Keep the agent versions available in Foundry for trace inspection.
+    # They can be cleaned up manually after reviewing the traces.
+    print("ℹ️ Agent versions were kept for portal inspection.")
 
 
 def verify_traces():
