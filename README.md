@@ -1,6 +1,18 @@
+<div align="center">
+
+<img src="https://img.shields.io/badge/Microsoft-Azure-0078D4?style=for-the-badge&logo=microsoftazure&logoColor=white" alt="Microsoft Azure">
+<img src="https://img.shields.io/badge/Microsoft-Foundry-5B5FC7?style=for-the-badge&logo=microsoft&logoColor=white" alt="Microsoft Foundry">
+
 # ClaimSight
 
-**Multi-agent insurance claims decision-support system built with Microsoft Foundry.**
+### Multi-Agent Insurance Claims Decision Support
+
+**Built with Microsoft Azure + Microsoft Foundry**  
+*From evidence to decision support, with human oversight*
+
+</div>
+
+---
 
 ClaimSight triages property and auto claims, identifies risk indicators, routes flagged cases, and generates evidence-based recommendations for human claims adjusters.
 
@@ -8,7 +20,9 @@ ClaimSight triages property and auto claims, identifies risk indicators, routes 
 
 ## Architecture
 
-![ClaimSight Architecture](./claims/images/architecture.png)
+<div align="center">
+<img src="./claims/images/architecture.png" alt="ClaimSight Architecture" width="100%">
+</div>
 
 ### Flow
 
@@ -131,4 +145,8 @@ The latest successful evaluation run recorded **100% overall**, with **10/10 Coh
 
 ---
 
+<div align="center">
+
 **Build → Monitor → Evaluate → Orchestrate/Deploy**
+
+</div>
