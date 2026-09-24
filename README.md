@@ -8,85 +8,69 @@ ClaimSight triages property and auto claims, identifies risk indicators, routes 
 
 ## Architecture
 
-```mermaid
-flowchart LR
-    A[Claim Batch] --> B[Claims Triage Agent]
-    B --> C[Structured Triage JSON]
-    C --> D{Risk / Review Gate}
-    D --> E[Claims Decision Agent]
-    E --> F[Human Claims Adjuster]
-    F --> G[Final Business Action]
+![ClaimSight Architecture](./claims/images/architecture.png)
 
-    B -.-> H[(assess_claim)]
-    B -.-> I[(Foundry Tracing)]
-    E -.-> I
-    I -.-> J[(Application Insights)]
-    K[(Evaluation Dataset)] -.-> B
+### Flow
+
+```text
+Claim Batch
+    ↓
+Claims Triage Agent
+    ├── assess_claim
+    ├── threshold analysis
+    └── evidence + risk
+    ↓
+Structured Triage JSON
+    ↓
+Claims Decision Agent
+    ↓
+Recommendation
+    ↓
+Human Claims Adjuster
 ```
-
-### Agent responsibilities
-
-| Agent | Responsibility |
-|---|---|
-| **Claims Triage Agent** | Evidence extraction, threshold checks, missing-document detection, risk classification |
-| **Claims Decision Agent** | Consumes triage JSON and produces an evidence-based recommendation |
 
 ## Tech Stack
 
 | Layer | Stack |
 |---|---|
-| AI platform | **Microsoft Foundry / Foundry Agent Service** |
-| Model | **GPT-4.1-mini** |
-| Language | **Python 3.10+** |
-| SDK | **Azure AI Projects SDK**, Azure Identity |
-| Agent tools | **Foundry FunctionTool** / `assess_claim` |
-| API | **OpenAI Responses API / Conversations API** |
-| Observability | **OpenTelemetry**, Azure Monitor, **Application Insights** |
-| Evaluation | **Microsoft Foundry Evaluations**, Coherence + Fluency |
-| Orchestration | **Foundry Workflow Agent** + Python SDK workflow |
+| AI platform | Microsoft Foundry / Foundry Agent Service |
+| Model | GPT-4.1-mini |
+| Language | Python 3.10+ |
+| SDK | Azure AI Projects SDK, Azure Identity |
+| Agent tools | Foundry FunctionTool / `assess_claim` |
+| API | OpenAI Responses API / Conversations API |
+| Observability | OpenTelemetry, Azure Monitor, Application Insights |
+| Evaluation | Microsoft Foundry Evaluations — Coherence + Fluency |
+| Orchestration | Foundry Workflow Agent + Python SDK |
 | Data | JSON / JSONL |
-| Source control | Git / GitHub / Codespaces |
+| Development | GitHub Codespaces |
 
-## Core flow
+## Agents
 
-```text
-Claims
-  ↓
-Triage Agent
-  ├─ assess_claim
-  ├─ threshold analysis
-  └─ evidence + risk
-  ↓
-Structured JSON
-  ↓
-Review / routing
-  ↓
-Decision Agent
-  ↓
-Recommendation
-  ↓
-Human Adjuster
-```
+| Agent | Responsibility |
+|---|---|
+| **Claims Triage Agent** | Evidence extraction, threshold checks, missing-document detection, risk classification |
+| **Claims Decision Agent** | Consumes structured triage evidence and produces an evidence-based recommendation |
 
-## Key controls
+## Key Engineering Controls
 
-- Explicit claim thresholds instead of free-form risk judgment
+- Tool-grounded claim metrics and explicit thresholds
 - Structured JSON contract between agents
-- Human-in-the-loop escalation for material risk or insufficient evidence
-- Evidence-based recommendations; no invented claim or policy facts
-- Foundry tracing for model/tool/workflow observability
-- Dataset-based evaluation before changes are promoted
-- Separate evaluation-safe agent version for portal evaluation where local Python tools are unavailable
+- Human-in-the-loop escalation
+- Evidence-based recommendations
+- Foundry tracing + Application Insights
+- Dataset-based evaluation
+- Separate tool-free evaluation agent for portal evaluation
 
-## Project structure
+## Project Structure
 
 ```text
 claims/
 ├── challenge-0-setup/       # Azure + Foundry setup
 ├── challenge-1-build/       # Triage + Decision agents
-├── challenge-2-monitor/     # GenAI tracing / Application Insights
-├── challenge-3-evaluate/    # Foundry evaluation dataset + eval agent
-├── challenge-4-deploy/      # Python + Foundry workflow orchestration
+├── challenge-2-monitor/     # Tracing / Application Insights
+├── challenge-3-evaluate/    # Evaluation dataset + evaluation agent
+├── challenge-4-deploy/      # Python + Foundry workflow
 ├── knowledge/               # Demo grounding guidance
 ├── ARCHITECTURE.md
 └── EVALUATION_PLAN.md
@@ -94,21 +78,28 @@ claims/
 
 ## Run
 
-### 1. Build agents
+### Build agents
 
 ```bash
 cd claims/challenge-1-build
 python agents.py
 ```
 
-### 2. Enable monitoring
+### Enable monitoring
 
 ```bash
 cd claims/challenge-2-monitor
 python monitor.py
 ```
 
-### 3. Run evaluation
+### Run production workflow
+
+```bash
+cd claims/challenge-4-deploy
+python deploy.py
+```
+
+## Evaluation
 
 Use **Microsoft Foundry → Build → Evaluations** with:
 
@@ -117,31 +108,16 @@ Use **Microsoft Foundry → Build → Evaluations** with:
 - Dataset: `claims/challenge-3-evaluate/eval_portal.jsonl`
 - Evaluators: Coherence, Fluency
 
-### 4. Run production workflow
-
-```bash
-cd claims/challenge-4-deploy
-python deploy.py
-```
-
-This runs the pipeline:
-
-```text
-Triage → validate → route → Decision → report
-```
+The latest successful evaluation run recorded **100% overall**, with **10/10 Coherence** and **10/10 Fluency** across 10 test cases.
 
 ## Validation
-
-The completed build includes:
 
 - ✅ Two persistent Foundry agents
 - ✅ GenAI tracing + Application Insights instrumentation
 - ✅ 10-case Foundry evaluation
-- ✅ Foundry workflow: `claims-processing-workflow`
+- ✅ `claims-processing-workflow` deployed
 - ✅ End-to-end Python orchestration
 - ✅ Human-review controls and structured agent handoff
-
-The latest successful evaluation run recorded **100% overall**, with **10/10 Coherence** and **10/10 Fluency** across the 10 test cases.
 
 ## Documentation
 
@@ -153,6 +129,6 @@ The latest successful evaluation run recorded **100% overall**, with **10/10 Coh
 - [Foundry Agent Service](https://learn.microsoft.com/azure/foundry/agents/overview)
 - [Foundry evaluation](https://learn.microsoft.com/azure/foundry/how-to/evaluate-generative-ai-app)
 
-## Project status
+---
 
-**Build → Monitor → Evaluate → Orchestrate/Deploy: Complete.**
+**Build → Monitor → Evaluate → Orchestrate/Deploy**
