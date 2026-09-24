@@ -73,7 +73,7 @@ def assess_claim(claim_id: str) -> str:
 
 
 def ensure_agents_deployed() -> tuple:
-    """Create both agents if not already deployed; reuse existing ones."""
+    """Publish a fresh version of both hardened agents for the workflow run."""
     print("=== Step 1: Ensure Agents Are Deployed ===")
 
     from azure.ai.projects import AIProjectClient
@@ -97,8 +97,6 @@ def ensure_agents_deployed() -> tuple:
         endpoint=PROJECT_CONNECTION_STRING,
         credential=DefaultAzureCredential(),
     )
-    existing_names = {a.name for a in client.agents.list()}
-
     if True:
         client.agents.create_version(
             agent_name=TRIAGE_AGENT_NAME,
