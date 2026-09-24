@@ -314,8 +314,9 @@ def create_workflow_agent(workflow_agent_name: str = "claims-processing-workflow
         allow_preview=True,
     )
 
-    # Exact portal YAML format: flat InvokeAzureAgent actions with agent.name,
-    # conversationId, input/output, and a final EndConversation action.
+    # Pass the user's complete claim message into Triage, capture its output,
+    # then pass only that triage output to Decision. This avoids blank-message
+    # agent calls and avoids leaking unrelated conversation turns downstream.
     workflow_yaml = (
         "kind: Workflow\n"
         f"name: {workflow_agent_name}\n"
@@ -328,18 +329,17 @@ def create_workflow_agent(workflow_agent_name: str = "claims-processing-workflow
         "      id: step_triage\n"
         "      agent:\n"
         "        name: claims-triage-agent\n"
-        "      conversationId: =System.ConversationId\n"
         "      input:\n"
-        '        messages: ""\n'
+        "        messages: =System.LastMessage.Text\n"
         "      output:\n"
-        "        autoSend: true\n"
+        "        messages: Local.TriageMessages\n"
+        "        autoSend: false\n"
         "    - kind: InvokeAzureAgent\n"
         "      id: step_decide\n"
         "      agent:\n"
         "        name: claims-decision-agent\n"
-        "      conversationId: =System.ConversationId\n"
         "      input:\n"
-        '        messages: ""\n'
+        "        messages: =Local.TriageMessages\n"
         "      output:\n"
         "        autoSend: true\n"
         "    - kind: EndConversation\n"
