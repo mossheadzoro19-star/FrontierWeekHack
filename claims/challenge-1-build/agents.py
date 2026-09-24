@@ -331,13 +331,26 @@ def main():
     decision_agent.create()
     print(f"✅ Created: {decision_agent.agent.name} (version {decision_agent.agent.version})")
 
-    print("\nDeciding on high-risk claim batch...")
-    high_risk_batch = [claim for claim in claim_batch if claim["status"] in {"critical", "warning"}]
+    print("\nPassing triage results to Decision Agent...")
     decision_result = decision_agent.run(
-        "You are receiving a batch payload of high-risk claims. For each claim, provide: "
-        "recommended action, reasoning, next steps, and urgency.\n\n"
-        "HIGH_RISK_CLAIM_BATCH:\n"
-        f"{json.dumps(high_risk_batch, indent=2)}"
+        """You are receiving the structured output from the Claims Triage Agent.
+
+Use ONLY the triage results below to provide decision-support recommendations.
+
+Do not independently invent claim facts.
+Do not ignore the human-review requirement.
+
+For each claim, provide:
+- recommended action
+- confidence
+- reasoning
+- next steps
+- urgency
+- human review requirement
+
+TRIAGE RESULTS:
+"""
+        + triage_result
     )
     print(decision_result)
 
