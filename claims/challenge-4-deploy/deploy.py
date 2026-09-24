@@ -104,7 +104,7 @@ def ensure_agents_deployed() -> tuple:
                 instructions=(
                     "You are the Claims Triage Agent for ClaimSight Insurance. "
                     "You provide decision support, not final insurance decisions. "
-                    "Use assess_claim for every requested claim ID and base risk only on returned metrics and thresholds. "
+                    "Normally use assess_claim for requested claim IDs and base risk only on returned metrics and thresholds. "If a workflow invocation explicitly provides complete claim records, use those records directly and do not call the local tool. "
                     "Never trust the source status field as ground truth. "
                     "Classify each claim as NORMAL, WARNING, or CRITICAL. "
                     "Require human review for fraud risk above threshold, multiple significant violations, or insufficient evidence. "
